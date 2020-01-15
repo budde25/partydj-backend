@@ -40,10 +40,12 @@ export const generateRoom = functions.https.onCall(async (data, context) => {
     // create the room
     try {
         await admin.firestore().collection('rooms')
-            .doc(roomCode).set({ 'enabled': true, 'owner': username, 'playlistId':playlistId});
+            .doc(roomCode).set({ 'enabled': true, 'owner': username,
+             'playlistId':playlistId, songs: []});
         return {
             status: 'success',
             roomCode: roomCode,
+            playlistId: playlistId,
         };
     }
     catch (error) {
@@ -59,7 +61,7 @@ export const generateRoom = functions.https.onCall(async (data, context) => {
 
 /**
  * Deletes/saves the playlist and disables the firestore boolean room
- * @param roomCode the code for the room to close
+ * @param roomCode the code for the room
  * @param accessToken a spotify access token
  * @param save a bool if the user wants the room saved
  * @param playlistName (optional) if the user wants the room saved use this name
@@ -86,7 +88,7 @@ export const closeRoom = functions.https.onCall( async (data, context) => {
 
 /**
  * Adds a song to the spotify playlist
- * @param roomCode the code for the room to close
+ * @param roomCode the code for the room
  * @param accessToken a spotify access token
  * @param song an object repesenting the song data
  * @returns bool if success
@@ -95,31 +97,12 @@ export const addSong = functions.https.onCall( async (data, context) => {
     const roomCode = data.roomCode;
     const accessToken = data.accessToken;
     const songUri = data.songUri;
+    const playlistId = data.playlistId;
 
-     // create the spotify playlist
      const spotifyApi = new SpotifyWebApi({
         accessToken: accessToken
     });
-
-    // get the playlist uri from firestore
-    let playlistId;
-    try {
-        const docRef = await admin.firestore().collection('rooms')
-            .doc(roomCode).get();
-        const response = docRef.data();
-        
-        if (response !== undefined) playlistId = response.playlistId;
-        else throw new Error('document refrence is undefined');
-    }
-    catch (error) {
-        console.error(error);
-        return {
-            staus: 'error',
-            code: 401,
-            message: 'Firestore connection failed',
-        };
-    }
-
+    
     // add the track to the playlist
     try {
         await spotifyApi.addTracksToPlaylist(playlistId, [songUri]);
@@ -134,7 +117,40 @@ export const addSong = functions.https.onCall( async (data, context) => {
 
     // ask spotify for the track details
     return updateDatabase(roomCode, playlistId, spotifyApi);
+})
 
+/**
+ * Removes a song to the spotify playlist
+ * @param roomCode the code for the room
+ * @param accessToken a spotify access token
+ * @param song an object repesenting the song data
+ * @returns bool if success
+ */
+export const removeSong = functions.https.onCall( async (data, context) => {
+    const roomCode = data.roomCode;
+    const accessToken = data.accessToken;
+    const songUri = data.songUri;
+    const playlistId = data.playlistId;
+
+    const spotifyApi = new SpotifyWebApi({
+        accessToken: accessToken
+    });
+
+    
+    // remove the track from the playlist
+    try {
+        await spotifyApi.removeTracksFromPlaylist(playlistId, [songUri]);
+    } catch (error) {
+        console.error(error);
+        return {
+            staus: 'error',
+            code: 401,
+            message: 'Spotify connection failed',
+        };
+    }
+
+    // ask spotify for the track details
+    return updateDatabase(roomCode, playlistId, spotifyApi);
 })
 
 async function updateDatabase(roomCode:string, playlistId: string, spotifyApi : SpotifyWebApi) {
@@ -154,13 +170,12 @@ async function updateDatabase(roomCode:string, playlistId: string, spotifyApi : 
 
     const tracks = []
     for (const item of spotifyTracks){
-        const addedBy = item.added_by.display_name;
+        //const addedBy = item.added_by.display_name;
         const track = item.track;
         const name = track.name;
         const uri = track.uri;
         const imageUrl = track.album.images[0].url;
         const artist = track.artists[0].name;
-        const position = track.track_number;
         
         // add the data to a JSON object
         const song = {
@@ -168,8 +183,6 @@ async function updateDatabase(roomCode:string, playlistId: string, spotifyApi : 
             'uri': uri,
             'artist': artist,
             'imageUrl': imageUrl,
-            'addedBy': addedBy,
-            'position': position,
         }
         tracks.push(song);
     }
@@ -196,18 +209,24 @@ async function updateDatabase(roomCode:string, playlistId: string, spotifyApi : 
 
 /**
  * Checks if a room is open
- * @param roomCode
+ * @param roomCode a code for the room
  * @returns bool true if enabled, false otherwise
  */
-export const isRoomOpen = functions.https.onCall(async (data, context) => {
+export const joinRoom = functions.https.onCall(async (data, context) => {
     const roomCode = data.roomCode;
     
+    let playlistId;
+
     try {
     const docRef = await admin.firestore().collection('rooms').doc(roomCode).get();
         if (docRef.exists) {
+            const document = docRef.data();
+            if (document === undefined) throw new Error('document is undefined'); 
+            playlistId = document.playlistId;
             return {
                 status: 'success',
                 isRoomOpen: true,
+                playlistId: playlistId,
             }
         } else {
             return {
