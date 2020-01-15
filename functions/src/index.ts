@@ -209,7 +209,6 @@ async function updateDatabase(roomCode:string, playlistId: string, spotifyApi : 
     }
     const tracksObject = { 'songs' : tracks };
 
-    console.log('push to fire');
     // push to the firestore
     try {
         await admin.firestore().collection('rooms')
