@@ -121,7 +121,6 @@ export const addSong = functions.https.onCall( async (data, context) => {
     }
 
     // add the track to the playlist
-    console.log(playlistId);
     try {
         await spotifyApi.addTracksToPlaylist(playlistId, [songUri]);
     } catch (error) {
@@ -139,7 +138,7 @@ export const addSong = functions.https.onCall( async (data, context) => {
 })
 
 async function updateDatabase(roomCode:string, playlistId: string, spotifyApi : SpotifyWebApi) {
-    console.log('updateDatabase');
+    console.log('updating the database');
         let spotifyTracks;
     try {
         const response = await spotifyApi.getPlaylistTracks(playlistId);
@@ -155,10 +154,10 @@ async function updateDatabase(roomCode:string, playlistId: string, spotifyApi : 
 
     const tracks = []
     for (const item of spotifyTracks){
-        const addedBy = item.added_by;
+        const addedBy = item.added_by.display_name;
         const track = item.track;
         const name = track.name;
-        const uri = track.uri;;
+        const uri = track.uri;
         const imageUrl = track.album.images[0].url;
         const artist = track.artists[0].name;
         const position = track.track_number;
@@ -180,7 +179,7 @@ async function updateDatabase(roomCode:string, playlistId: string, spotifyApi : 
     // push to the firestore
     try {
         await admin.firestore().collection('rooms')
-            .doc(roomCode).set(tracksObject);
+            .doc(roomCode).update(tracksObject);
         return {
             status: 'success'
         }
