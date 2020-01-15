@@ -63,18 +63,23 @@ export const generateRoom = functions.https.onCall(async (data, context) => {
  * Deletes/saves the playlist and disables the firestore boolean room
  * @param roomCode the code for the room
  * @param accessToken a spotify access token
+ * @param playlistId the id of the playlist
  * @param save a bool if the user wants the room saved
  * @param playlistName (optional) if the user wants the room saved use this name
  * @returns bool if success
  */
 export const closeRoom = functions.https.onCall( async (data, context) => {
     const roomCode = data.roomCode;
+    const accessToken = data.accessToken;
+    const playlistId = data.playlistId;
+
+    const spotifyApi = new SpotifyWebApi({
+        accessToken: accessToken
+    });
+
     try {
         await admin.firestore().collection('rooms')
             .doc(roomCode).delete();
-        return {
-            status: 'success',
-        };
     }
     catch (error) {
         console.error(error);
@@ -82,6 +87,22 @@ export const closeRoom = functions.https.onCall( async (data, context) => {
             staus: 'error',
             code: 401,
             message: 'Firestore connection failed',
+        };
+    }
+
+    
+    // remove the track from the playlist
+    try {
+        await spotifyApi.unfollowPlaylist(playlistId);
+        return {
+            status: 'success',
+        };
+    } catch (error) {
+        console.error(error);
+        return {
+            staus: 'error',
+            code: 401,
+            message: 'Spotify connection failed',
         };
     }
     })
