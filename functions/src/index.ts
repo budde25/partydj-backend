@@ -41,7 +41,7 @@ export const generateRoom = functions.https.onCall(async (data, context) => {
     try {
         await admin.firestore().collection('rooms')
             .doc(roomCode).set({ 'enabled': true, 'owner': username,
-             'playlistId':playlistId, songs: []});
+             'playlistId':playlistId, songs: [], 'currentSong': {'name': '', 'artist': '', imageUrl: '', uri: ''}});
         return {
             status: 'success',
             roomCode: roomCode,
