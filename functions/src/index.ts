@@ -202,7 +202,7 @@ async function updateDatabase(roomCode:string, playlistId: string, spotifyApi : 
             'uri': uri,
             'artist': artist,
             'imageUrl': imageUrl,
-            'addedBy:': addedBy,
+            'addedBy': addedBy,
         }
         tracks.push(song);
     }
