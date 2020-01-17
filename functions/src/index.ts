@@ -157,10 +157,9 @@ export const removeSong = functions.https.onCall( async (data, context) => {
         accessToken: accessToken
     });
 
-    
     // remove the track from the playlist
     try {
-        await spotifyApi.removeTracksFromPlaylist(playlistId, [songUri]);
+        await spotifyApi.removeTracksFromPlaylist(playlistId, [{uri: songUri}]);
     } catch (error) {
         console.error(error);
         return {
@@ -175,8 +174,7 @@ export const removeSong = functions.https.onCall( async (data, context) => {
 })
 
 async function updateDatabase(roomCode:string, playlistId: string, spotifyApi : SpotifyWebApi) {
-    console.log('updating the database');
-        let spotifyTracks;
+    let spotifyTracks;
     try {
         const response = await spotifyApi.getPlaylistTracks(playlistId);
         spotifyTracks = response.body.items
@@ -191,19 +189,20 @@ async function updateDatabase(roomCode:string, playlistId: string, spotifyApi : 
 
     const tracks = []
     for (const item of spotifyTracks){
-        //const addedBy = item.added_by.display_name;
+        const addedBy = item.added_by.id;
         const track = item.track;
         const name = track.name;
         const uri = track.uri;
         const imageUrl = track.album.images[0].url;
         const artist = track.artists[0].name;
-        
+
         // add the data to a JSON object
         const song = {
             'name': name,
             'uri': uri,
             'artist': artist,
             'imageUrl': imageUrl,
+            'addedBy:': addedBy,
         }
         tracks.push(song);
     }
