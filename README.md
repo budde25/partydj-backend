@@ -14,8 +14,8 @@ to Spotify and lets the app stream the database with any changes causing instant
 
 ## Built With
 [Firebase Cloud Functions](https://firebase.google.com/docs/functions/) - Hosts the functions.  
-[Npm](https://www.npmjs.com/) - Package manager.  
-[Spotify Web Api Node](https://github.com/thelinmichael/spotify-web-api-node) - A Spotify Web Api library.  
+[NodeJS](https://nodejs.org/) - Package manager.  
+[Spotify Web Api Node](https://github.com/thelinmichael/spotify-web-api-node) - A Spotify Web API library.  
 
 ## Author
 Ethan Budd
