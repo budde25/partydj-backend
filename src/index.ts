@@ -32,7 +32,7 @@ export const generateRoom = functions.https.onCall(async (data, context) => {
         return {
             staus: 'error',
             code: 401,
-            message: 'Spotify connection failed',
+            message: 'Spotify connection failed'
         };
     }
     
@@ -45,7 +45,7 @@ export const generateRoom = functions.https.onCall(async (data, context) => {
         return {
             status: 'success',
             roomCode: roomCode,
-            playlistId: playlistId,
+            playlistId: playlistId
         };
     }
     catch (error) {
@@ -53,7 +53,7 @@ export const generateRoom = functions.https.onCall(async (data, context) => {
         return {
             staus: 'error',
             code: 401,
-            message: 'Firestore connection failed',
+            message: 'Firestore connection failed'
         };
     }
     
@@ -86,7 +86,7 @@ export const closeRoom = functions.https.onCall( async (data, context) => {
         return {
             staus: 'error',
             code: 401,
-            message: 'Firestore connection failed',
+            message: 'Firestore connection failed'
         };
     }
 
@@ -95,14 +95,14 @@ export const closeRoom = functions.https.onCall( async (data, context) => {
     try {
         await spotifyApi.unfollowPlaylist(playlistId);
         return {
-            status: 'success',
+            status: 'success'
         };
     } catch (error) {
         console.error(error);
         return {
             staus: 'error',
             code: 401,
-            message: 'Spotify connection failed',
+            message: 'Spotify connection failed'
         };
     }
     })
@@ -132,7 +132,7 @@ export const addSong = functions.https.onCall( async (data, context) => {
         return {
             staus: 'error',
             code: 401,
-            message: 'Spotify connection failed',
+            message: 'Spotify connection failed'
         };
     }
 
@@ -165,7 +165,7 @@ export const removeSong = functions.https.onCall( async (data, context) => {
         return {
             staus: 'error',
             code: 401,
-            message: 'Spotify connection failed',
+            message: 'Spotify connection failed'
         };
     }
 
@@ -183,7 +183,7 @@ async function updateDatabase(roomCode:string, playlistId: string, spotifyApi : 
         return {
             staus: 'error',
             code: 401,
-            message: 'Spotify connection failed',
+            message: 'Spotify connection failed'
         };
     }
 
@@ -202,7 +202,7 @@ async function updateDatabase(roomCode:string, playlistId: string, spotifyApi : 
             'uri': uri,
             'artist': artist,
             'imageUrl': imageUrl,
-            'addedBy': addedBy,
+            'addedBy': addedBy
         }
         tracks.push(song);
     }
@@ -221,7 +221,7 @@ async function updateDatabase(roomCode:string, playlistId: string, spotifyApi : 
         return {
             staus: 'error',
             code: 401,
-            message: 'Firestore connection failed',
+            message: 'Firestore connection failed'
         };
     }
 }
@@ -245,12 +245,12 @@ export const joinRoom = functions.https.onCall(async (data, context) => {
             return {
                 status: 'success',
                 isRoomOpen: true,
-                playlistId: playlistId,
+                playlistId: playlistId
             }
         } else {
             return {
                 status: 'success',
-                isRoomOpen: false,
+                isRoomOpen: false
             }
         }
     } catch (error) {
@@ -258,7 +258,7 @@ export const joinRoom = functions.https.onCall(async (data, context) => {
         return {
             staus: 'error',
             code: 401,
-            message: 'Firestore connection failed',
+            message: 'Firestore connection failed'
         };
     }
 })
