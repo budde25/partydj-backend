@@ -1,4 +1,7 @@
 # Party DJ Backend
+
+![Firebase CI](https://github.com/budde25/partydj-backend/workflows/Firebase%20CI/badge.svg)
+
 The backend for Party DJ mobile application. Serverside function calls that support integration between the app, database,
 and spotify api call. Manages the majority of the Web Api calls and updates the database accordingly. This limits the api calls
 to Spotify and lets the app stream the database with any changes causing instant updates to the app. In addition to working well with Firestore Cloud Functions allows for seamless serverside code updates without causing disruption to the app.
