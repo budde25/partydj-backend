@@ -13,16 +13,16 @@ const appName = 'spotifyQueue';
  */
 export const generateRoom = functions.https.onCall(async (data, context) => {
 
-    const roomCode = generateCode(6);
-    const username = data.username;
-    const accessToken = data.accessToken;
+    const roomCode: string = generateCode(6);
+    const username: string = data.username;
+    const accessToken: string = data.accessToken;
 
     // create the spotify playlist
     const spotifyApi = new SpotifyWebApi({
         accessToken: accessToken
     });
 
-    let playlistId;
+    let playlistId: string;
 
     try {
         const response = await spotifyApi.createPlaylist(username, appName + ':' + roomCode, { 'public' : true });
