@@ -288,7 +288,7 @@ function generateCode(length: number): string {
  * @returns the failure code and logs the failure
  */
 function paramFail(param: string): object {
-    console.error(`${param} is null or ''`)
+    console.error(`${param} is null or ''`);
     return { 
         status: 'error',
         code: 400,
@@ -301,5 +301,5 @@ function paramFail(param: string): object {
  * @returns true if null or empty false otherwise
  */
 function paramIsEmpty(param: any): boolean {
-    return (param == null || param == '');
+    return (param === null || param === '');
 }
