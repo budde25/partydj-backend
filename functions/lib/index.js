@@ -1,10 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.joinRoom = exports.removeSong = exports.addSong = exports.closeRoom = exports.generateRoom = void 0;
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const SpotifyWebApi = require("spotify-web-api-node");
 admin.initializeApp();
-const appName = 'spotifyQueue';
+const APP_NAME = 'PartyDJ';
+const ROOM_LENGTH = 6;
 /**
  * Generates a spotify playlist for the user and creates a firestore room.
  * @param authToken a spotify authtoken
@@ -12,16 +14,19 @@ const appName = 'spotifyQueue';
  * @returns a generated room code
  */
 exports.generateRoom = functions.https.onCall(async (data, context) => {
-    const roomCode = generateCode(6);
+    const roomCode = generateCode(ROOM_LENGTH);
     const username = data.username;
     const accessToken = data.accessToken;
-    // create the spotify playlist
-    const spotifyApi = new SpotifyWebApi({
-        accessToken: accessToken
-    });
+    const spotifyApi = new SpotifyWebApi({ accessToken: accessToken });
     let playlistId;
+    // Check the parameters
+    if (paramIsEmpty(username))
+        return paramFail('Username');
+    if (paramIsEmpty(accessToken))
+        return paramFail('Access token');
+    // Create Playlist
     try {
-        const response = await spotifyApi.createPlaylist(username, appName + ':' + roomCode, { 'public': true });
+        const response = await spotifyApi.createPlaylist(username, APP_NAME + ':' + roomCode, { 'public': true });
         playlistId = response.body.id;
     }
     catch (error) {
@@ -32,7 +37,7 @@ exports.generateRoom = functions.https.onCall(async (data, context) => {
             message: 'Spotify connection failed'
         };
     }
-    // create the room
+    // Create the room
     try {
         await admin.firestore().collection('rooms')
             .doc(roomCode).set({ 'enabled': true, 'owner': username,
@@ -65,9 +70,14 @@ exports.closeRoom = functions.https.onCall(async (data, context) => {
     const roomCode = data.roomCode;
     const accessToken = data.accessToken;
     const playlistId = data.playlistId;
-    const spotifyApi = new SpotifyWebApi({
-        accessToken: accessToken
-    });
+    const spotifyApi = new SpotifyWebApi({ accessToken: accessToken });
+    // Check the parameters
+    if (paramIsEmpty(roomCode))
+        return paramFail('Room code');
+    if (paramIsEmpty(accessToken))
+        return paramFail('Access token');
+    if (paramIsEmpty(playlistId))
+        return paramFail('Playlist id');
     try {
         await admin.firestore().collection('rooms')
             .doc(roomCode).delete();
@@ -80,7 +90,7 @@ exports.closeRoom = functions.https.onCall(async (data, context) => {
             message: 'Firestore connection failed'
         };
     }
-    // remove the track from the playlist
+    // Remove the track from the playlist
     try {
         await spotifyApi.unfollowPlaylist(playlistId);
         return {
@@ -108,10 +118,17 @@ exports.addSong = functions.https.onCall(async (data, context) => {
     const accessToken = data.accessToken;
     const songUri = data.songUri;
     const playlistId = data.playlistId;
-    const spotifyApi = new SpotifyWebApi({
-        accessToken: accessToken
-    });
-    // add the track to the playlist
+    const spotifyApi = new SpotifyWebApi({ accessToken: accessToken });
+    // Check the parameters
+    if (paramIsEmpty(roomCode))
+        return paramFail('Room code');
+    if (paramIsEmpty(accessToken))
+        return paramFail('Access token');
+    if (paramIsEmpty(playlistId))
+        return paramFail('Playlist id');
+    if (paramIsEmpty(songUri))
+        return paramFail('Song uri');
+    // Add the track to the playlist
     try {
         await spotifyApi.addTracksToPlaylist(playlistId, [songUri]);
     }
@@ -123,7 +140,7 @@ exports.addSong = functions.https.onCall(async (data, context) => {
             message: 'Spotify connection failed'
         };
     }
-    // ask spotify for the track details
+    // Get spotify track details
     return updateDatabase(roomCode, playlistId, spotifyApi);
 });
 /**
@@ -138,10 +155,17 @@ exports.removeSong = functions.https.onCall(async (data, context) => {
     const accessToken = data.accessToken;
     const songUri = data.songUri;
     const playlistId = data.playlistId;
-    const spotifyApi = new SpotifyWebApi({
-        accessToken: accessToken
-    });
-    // remove the track from the playlist
+    const spotifyApi = new SpotifyWebApi({ accessToken: accessToken });
+    // Check the parameters
+    if (paramIsEmpty(roomCode))
+        return paramFail('Room code');
+    if (paramIsEmpty(accessToken))
+        return paramFail('Access token');
+    if (paramIsEmpty(playlistId))
+        return paramFail('Playlist id');
+    if (paramIsEmpty(songUri))
+        return paramFail('Song uri');
+    // Remove the track from the playlist
     try {
         await spotifyApi.removeTracksFromPlaylist(playlistId, [{ uri: songUri }]);
     }
@@ -153,7 +177,7 @@ exports.removeSong = functions.https.onCall(async (data, context) => {
             message: 'Spotify connection failed'
         };
     }
-    // ask spotify for the track details
+    // Get spotify track details
     return updateDatabase(roomCode, playlistId, spotifyApi);
 });
 async function updateDatabase(roomCode, playlistId, spotifyApi) {
@@ -172,24 +196,18 @@ async function updateDatabase(roomCode, playlistId, spotifyApi) {
     }
     const tracks = [];
     for (const item of spotifyTracks) {
-        const addedBy = item.added_by.id;
         const track = item.track;
-        const name = track.name;
-        const uri = track.uri;
-        const imageUrl = track.album.images[0].url;
-        const artist = track.artists[0].name;
-        // add the data to a JSON object
         const song = {
-            'name': name,
-            'uri': uri,
-            'artist': artist,
-            'imageUrl': imageUrl,
-            'addedBy': addedBy
+            'name': track.name,
+            'uri': track.uri,
+            'artist': track.artists[0].name,
+            'imageUrl': track.album.images[0].url,
+            'addedBy': item.added_by.id
         };
         tracks.push(song);
     }
     const tracksObject = { 'songs': tracks };
-    // push to the firestore
+    // Push to the firestore
     try {
         await admin.firestore().collection('rooms')
             .doc(roomCode).update(tracksObject);
@@ -213,6 +231,9 @@ async function updateDatabase(roomCode, playlistId, spotifyApi) {
  */
 exports.joinRoom = functions.https.onCall(async (data, context) => {
     const roomCode = data.roomCode;
+    // Check the parameter
+    if (paramIsEmpty(roomCode))
+        return paramFail('Room code');
     let playlistId;
     try {
         const docRef = await admin.firestore().collection('rooms').doc(roomCode).get();
@@ -255,5 +276,26 @@ function generateCode(length) {
         ans += arr[Math.floor(Math.random() * arr.length)];
     }
     return ans;
+}
+/**
+ * Logs and returns a failure
+ * @param param parameter to inject in the log
+ * @returns the failure code and logs the failure
+ */
+function paramFail(param) {
+    console.error(`${param} is null or ''`);
+    return {
+        status: 'error',
+        code: 400,
+        message: `${param} format incorrect`
+    };
+}
+/**
+ * Checks if a param is null or empty
+ * @param param the parameter to test
+ * @returns true if null or empty false otherwise
+ */
+function paramIsEmpty(param) {
+    return (param === null || param === '');
 }
 //# sourceMappingURL=index.js.map
